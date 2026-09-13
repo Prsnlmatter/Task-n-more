@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeevan — Life in Weeks</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1720">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jeevan">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #0f1720;
+    --panel: #161f29;
+    --panel-line: #24313f;
+    --text: #eaf2f8;
+    --muted: #7c8ca0;
+    --blue: #2f8fff;
+    --blue-dim: #1b4e85;
+    --green: #21c57a;
+    --green-dim: #14472f;
+    --orange: #ff8a3d;
+    --orange-dim: #5a3a20;
+    --cell-empty: #1c2733;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 720px; margin: 0 auto; padding: 20px 18px 60px; }
+
+  /* Auth bar */
+  .authbar{
+    display:flex; justify-content:flex-end; align-items:center;
+    gap:10px; margin-bottom:18px; font-size:13px; color: var(--muted);
+  }
+  .authbar button{
+    background:none; border:1px solid var(--panel-line); color: var(--text);
+    border-radius:7px; padding:6px 11px; font-size:12.5px; font-family:inherit; cursor:pointer;
+  }
+  .authbar button:hover{ border-color: var(--blue-dim); }
+
+  .brand{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .brand .dot{ width:9px; height:9px; border-radius:50%; }
+  .brand h1{
+    font-family:'Fraunces', serif; font-weight:700; font-size:32px; margin:0;
+    background: linear-gradient(90deg, var(--blue), var(--green) 55%, var(--orange));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .tagline{ color: var(--muted); font-size:14px; margin: 4px 0 22px; }
+
+  .controls{
+    display:flex; gap:12px; flex-wrap:wrap; background:var(--panel);
+    border:1px solid var(--panel-line); border-radius:10px; padding:16px; margin-bottom:18px;
+  }
+  .field{ flex:1 1 130px; display:flex; flex-direction:column; gap:6px; }
+  .field label{ font-size:12px; color:var(--muted); }
+  .field input, .field select{
+    background: var(--bg); border:1px solid var(--panel-line); border-radius:7px;
+    color: var(--text); padding:9px 10px; font-size:14px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color: var(--blue-dim); }
+
+  .toolsrow{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; }
+  .toolsrow button{
+    flex:1 1 auto; background: var(--panel); border:1px solid var(--panel-line); color:var(--text);
+    border-radius:9px; padding:10px 12px; font-size:13px; font-family:inherit; cursor:pointer;
+  }
+  .toolsrow button:hover{ border-color: var(--blue-dim); }
+
+  .hero{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+  .hero .big{
+    font-family:'Fraunces', serif; font-weight:600; font-size:clamp(52px, 17vw, 82px);
+    line-height:1; color: var(--blue);
+  }
+  .hero .biglabel{ font-size:15px; color:var(--muted); padding-bottom:10px; }
+
+  .substats{ display:flex; gap:22px; flex-wrap:wrap; margin:6px 0 26px; padding-bottom:22px; border-bottom:1px solid var(--panel-line); }
+  .substat .n{ font-size:20px; font-weight:600; color:var(--text); }
+  .substat .l{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+  .bar-outer{ width:100%; height:6px; background:var(--cell-empty); border-radius:4px; overflow:hidden; margin-bottom:26px; }
+  .bar-inner{ height:100%; background: linear-gradient(90deg, var(--blue-dim), var(--blue)); border-radius:4px; transition: width 0.4s ease; }
+
+  .gridsection h2{ font-family:'Fraunces', serif; font-weight:500; font-size:19px; margin:0 0 4px; }
+  .gridsection p.desc{ font-size:13px; color:var(--muted); margin:0 0 14px; }
+
+  .zoomrow{ display:flex; align-items:center; margin-bottom:14px; }
+  .zoomrow .zoomlabel{ font-size:12px; color:var(--muted); }
+
+  #gridScroll{ overflow:auto; max-height:60vh; border:1px solid var(--panel-line); border-radius:10px; padding:10px; -webkit-overflow-scrolling:touch; touch-action: pan-x pan-y; }
+  #gridContainer{ transform-origin: top left; transition: transform 0.12s ease-out; width: max-content; }
+
+  .weekgrid{ display:grid; gap:2px; margin-bottom:4px; }
+  .cell{ width:9px; height:9px; border-radius:1.5px; background:var(--cell-empty); cursor:pointer; position:relative; }
+  .cell.lived{ background: var(--blue-dim); }
+  .cell.current{ background: var(--blue); box-shadow: 0 0 0 1px rgba(47,143,255,0.5); }
+  .cell.good{ background: var(--green) !important; }
+  .cell.bad{ background: var(--orange) !important; }
+  .cell.has-note::after{
+    content:''; position:absolute; top:-1px; right:-1px; width:3px; height:3px; border-radius:50%; background:var(--text);
+  }
+
+  .yearrow{ display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+  .yearrow .agenum{ width:26px; flex:0 0 26px; font-size:10px; color:var(--muted); text-align:right; font-variant-numeric: tabular-nums; }
+  .yearrow .agenum.tick{ color: var(--blue); }
+
+  .legend{ display:flex; gap:16px; align-items:center; margin-top:16px; font-size:12px; color:var(--muted); flex-wrap:wrap; }
+  .legend .sw{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+
+  .footnote{ margin-top:30px; font-size:12.5px; color:var(--muted); line-height:1.6; }
+
+  /* Overlay + sheet (shared by week editor, notebook, auth) */
+  #overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.55); opacity:0; pointer-events:none; transition:opacity 0.18s; z-index:20; }
+  #overlay.open{ opacity:1; pointer-events:auto; }
+
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; background:var(--panel); border-top:1px solid var(--panel-line);
+    border-radius:16px 16px 0 0; padding:20px 20px 26px; transform: translateY(100%);
+    transition: transform 0.22s ease; z-index:21; max-width:720px; margin:0 auto;
+    max-height: 82vh; overflow-y:auto;
+  }
+  .sheet.open{ transform: translateY(0); }
+  .sheetHead{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+  .sheetTitle{ font-family:'Fraunces', serif; font-size:18px; }
+  .sheetDate{ font-size:12.5px; color:var(--muted); }
+
+  #noteInput{
+    width:100%; margin-top:14px; background:var(--bg); border:1px solid var(--panel-line); border-radius:8px;
+    color:var(--text); padding:10px 12px; font-family:inherit; font-size:14px; min-height:80px; resize:vertical;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #noteInput:focus{ outline:none; border-color: var(--blue-dim); }
+  #noteInput.note-good{ background: rgba(33,197,122,0.12); border-color: var(--green); }
+  #noteInput.note-bad{ background: rgba(255,138,61,0.12); border-color: var(--orange); }
+
+  .marktoggles{ display:flex; gap:8px; margin-top:14px; }
+  .marktoggles button{
+    flex:1; padding:10px; border-radius:8px; border:1px solid var(--panel-line); background:var(--bg);
+    color:var(--text); font-family:inherit; font-size:13px; cursor:pointer;
+  }
+  .marktoggles button.active-good{ background: var(--green); border-color: var(--green); color:#08251a; }
+  .marktoggles button.active-bad{ background: var(--orange); border-color: var(--orange); color:#2a1608; }
+
+  .sheetActions{ display:flex; gap:10px; margin-top:16px; }
+  .sheetActions button{ padding:10px 16px; border-radius:8px; border:none; font-family:inherit; font-size:13.5px; cursor:pointer; }
+  #saveBtn{ background: var(--blue); color:#06121f; font-weight:600; }
+  #closeBtn, .secondaryClose{ background: var(--panel-line); color:var(--text); }
+
+  /* Notebook (search + all notes) */
+  #notebookSearch{
+    width:100%; background:var(--bg); border:1px solid var(--panel-line); border-radius:8px;
+    color:var(--text); padding:10px 12px; font-family:inherit; font-size:14px; margin-top:14px;
+  }
+  #notebookSearch:focus{ outline:none; border-color: var(--blue-dim); }
+  .noteCard{
+    border:1px solid var(--panel-line); border-radius:9px; padding:10px 12px; margin-top:10px; cursor:pointer;
+  }
+  .noteCard.good{ background: rgba(33,197,122,0.10); border-color: var(--green); }
+  .noteCard.bad{ background: rgba(255,138,61,0.10); border-color: var(--orange); }
+  .noteCard .meta{ font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .noteCard .tag{ text-transform:uppercase; letter-spacing:0.04em; font-size:10px; color: var(--blue); }
+  .noteCard .text{ font-size:13.5px; margin-top:6px; white-space:pre-wrap; }
+  .emptyNote{ color:var(--muted); font-size:13px; margin-top:14px; }
+
+  /* Auth sheet */
+  #authSheet .field{ margin-top:12px; }
+  #authTabs{ display:flex; gap:8px; margin-top:8px; }
+  #authTabs button{
+    flex:1; padding:8px; border-radius:7px; border:1px solid var(--panel-line); background:var(--bg);
+    color:var(--muted); font-family:inherit; font-size:13px; cursor:pointer;
+  }
+  #authTabs button.activeTab{ background: var(--blue); color:#06121f; border-color:var(--blue); }
+  .authNote{ font-size:11.5px; color:var(--muted); margin-top:12px; line-height:1.5; }
+  .authError{ font-size:12.5px; color: var(--orange); margin-top:8px; min-height:14px; }
+
+  /* Reminder card */
+  .reminderCard{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:10px; padding:16px; margin-bottom:26px;
+  }
+  .reminderCard h3{ font-family:'Fraunces', serif; font-weight:500; font-size:16px; margin:0 0 4px; }
+  .reminderCard p{ font-size:12.5px; color:var(--muted); margin:0 0 12px; line-height:1.5; }
+  .reminderRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .reminderRow .field{ flex:1 1 110px; }
+  #reminderToggle{
+    background: var(--panel-line); color:var(--text); border:none; border-radius:8px; padding:9px 14px;
+    font-family:inherit; font-size:13px; cursor:pointer;
+  }
+  #reminderToggle.on{ background: var(--green); color:#08251a; }
+
+  .todoCard{ background:var(--panel); border:1px solid var(--panel-line); border-radius:10px; padding:16px; margin-bottom:26px; }
+  .todoCard h3{ font-family:'Fraunces', serif; font-weight:500; font-size:16px; margin:0 0 12px; }
+  .todoProgress{ display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+  .todoRing{
+    width:64px; height:64px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background: conic-gradient(var(--green) 0deg, var(--cell-empty) 0deg);
+  }
+  .todoRing .ringInner{
+    width:48px; height:48px; border-radius:50%; background: var(--panel);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:600; color:var(--text);
+  }
+  .todoProgressText{ font-size:12.5px; color:var(--muted); line-height:1.5; }
+  .todoProgressText strong{ color:var(--text); font-weight:600; }
+  .todoInputRow{ display:flex; gap:8px; }
+  .todoInputRow input{
+    flex:1; background:var(--bg); border:1px solid var(--panel-line); border-radius:7px;
+    color:var(--text); padding:9px 10px; font-size:14px; font-family:inherit;
+  }
+  .todoInputRow input:focus{ outline:none; border-color: var(--blue-dim); }
+  .todoInputRow button{
+    background: var(--blue); color:#06121f; border:none; border-radius:7px; padding:0 16px;
+    font-size:13px; font-weight:600; font-family:inherit; cursor:pointer;
+  }
+  .todoItem{ display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--panel-line); }
+  .todoItem:last-child{ border-bottom:none; }
+  .todoItem input[type="checkbox"]{ width:17px; height:17px; accent-color: var(--green); flex-shrink:0; }
+  .todoItem .todoText{ flex:1; font-size:14px; word-break:break-word; }
+  .todoItem.done .todoText{ text-decoration:line-through; color:var(--muted); }
+  .todoItem .todoDel{ background:none; border:none; color:var(--muted); font-size:17px; line-height:1; cursor:pointer; padding:2px 6px; }
+  .todoItem .todoDel:hover{ color: var(--orange); }
+  .todoEmpty{ color:var(--muted); font-size:13px; margin-top:12px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="authbar" id="authbar"></div>
+
+  <div class="brand">
+    <span class="dot" style="background:var(--blue)"></span>
+    <span class="dot" style="background:var(--green)"></span>
+    <span class="dot" style="background:var(--orange)"></span>
+    <h1>Jeevan</h1>
+  </div>
+  <p class="tagline">Every week of a lifetime, counted down.</p>
+
+  <div class="controls">
+    <div class="field">
+      <label for="birthdate">Birth date</label>
+      <input type="date" id="birthdate">
+    </div>
+    <div class="field">
+      <label for="targetage">Target age (years)</label>
+      <input type="number" id="targetage" min="1" max="130" value="90">
+    </div>
+    <div class="field">
+      <label for="unitSelect">View by</label>
+      <select id="unitSelect">
+        <option value="week">Weeks</option>
+        <option value="month">Months</option>
+        <option value="year">Years</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="toolsrow">
+    <button id="notebookBtn">📓 Notebook &amp; search</button>
+    <button id="batchBtn">🗂️ Batch mark</button>
+    <button id="exportBtn">⬇️ Export data</button>
+    <button id="importBtn">⬆️ Import data</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+  </div>
+
+  <div class="hero">
+    <div class="big" id="bigNumber">—</div>
+    <div class="biglabel" id="bigLabel">left in this lifetime</div>
+  </div>
+
+  <div class="substats">
+    <div class="substat"><div class="n" id="livedNum">—</div><div class="l" id="livedLabel">lived</div></div>
+    <div class="substat"><div class="n" id="pctLived">—</div><div class="l">of the way there</div></div>
+    <div class="substat"><div class="n" id="yearsLeft">—</div><div class="l">years left</div></div>
+    <div class="substat"><div class="n" id="currentAge">—</div><div class="l">current age</div></div>
+  </div>
+
+  <div class="bar-outer"><div class="bar-inner" id="barInner" style="width:0%"></div></div>
+
+  <div class="reminderCard">
+    <h3>Weekly reminder</h3>
+    <p>Jeevan can nudge you to jot a note — but only while it's open in a tab or installed app; a true background push would need a server, which this static app doesn't have.</p>
+    <div class="reminderRow">
+      <div class="field">
+        <label for="reminderDay">Day</label>
+        <select id="reminderDay">
+          <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option>
+          <option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option>
+          <option value="6">Saturday</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="reminderTime">Time</label>
+        <input type="time" id="reminderTime" value="18:00">
+      </div>
+      <button id="reminderToggle">Enable</button>
+    </div>
+  </div>
+
+  <div class="todoCard">
+    <h3>To-do</h3>
+    <div class="todoProgress">
+      <div class="todoRing" id="todoRing"><div class="ringInner" id="todoRingText">0%</div></div>
+      <div class="todoProgressText" id="todoProgressText">No tasks yet.</div>
+    </div>
+    <div class="todoInputRow">
+      <input type="text" id="todoInput" placeholder="Add a task…">
+      <button id="todoAddBtn">Add</button>
+    </div>
+    <div id="todoList"></div>
+  </div>
+
+  <div class="gridsection">
+    <h2>The full grid</h2>
+    <p class="desc">Tap any square to add a note or mark it as went well (green) or went bad (orange). Pinch with two fingers to zoom.</p>
+
+    <div class="zoomrow">
+      <div class="zoomlabel" id="zoomLabel">100%</div>
+    </div>
+
+    <div id="gridScroll"><div id="gridContainer"></div></div>
+
+    <div class="legend">
+      <span><span class="sw" style="background:var(--blue-dim)"></span>Lived</span>
+      <span><span class="sw" style="background:var(--blue)"></span>Current</span>
+      <span><span class="sw" style="background:var(--green)"></span>Went well</span>
+      <span><span class="sw" style="background:var(--orange)"></span>Went bad</span>
+      <span><span class="sw" style="background:var(--cell-empty)"></span>Ahead</span>
+    </div>
+  </div>
+
+  <p class="footnote">Switch "View by" to see the same lifetime laid out in weeks, months, or years — each has its own notes. Set your profile above; on this device your data is saved automatically as you go.</p>
+</div>
+
+<!-- Week/month/year editor sheet -->
+<div id="overlay"></div>
+<div class="sheet" id="editSheet">
+  <div class="sheetHead"><div class="sheetTitle" id="sheetTitle">—</div></div>
+  <div class="sheetDate" id="sheetDate"></div>
+  <textarea id="noteInput" placeholder="What happened?"></textarea>
+  <div class="marktoggles">
+    <button id="goodBtn">🙂 Went well</button>
+    <button id="badBtn">🙁 Went bad</button>
+  </div>
+  <div class="sheetActions">
+    <button id="saveBtn">Save</button>
+    <button id="closeBtn">Close</button>
+  </div>
+</div>
+
+<!-- Notebook sheet -->
+<div class="sheet" id="notebookSheet">
+  <div class="sheetHead"><div class="sheetTitle">Notebook</div></div>
+  <input type="text" id="notebookSearch" placeholder="Search your notes by keyword…">
+  <div id="notebookList"></div>
+  <div class="sheetActions"><button class="secondaryClose" id="notebookClose">Close</button></div>
+</div>
+
+<!-- Batch mark sheet -->
+<div class="sheet" id="batchSheet">
+  <div class="sheetHead"><div class="sheetTitle">Batch mark ages</div></div>
+  <div class="sheetDate">Mark a whole range of ages at once — for years you'd rather not tick one by one.</div>
+  <div class="controls" style="margin-top:14px; margin-bottom:0;">
+    <div class="field"><label for="batchFrom">From age</label><input type="number" id="batchFrom" min="0" value="0"></div>
+    <div class="field"><label for="batchTo">To age</label><input type="number" id="batchTo" min="0" value="10"></div>
+  </div>
+  <div class="marktoggles">
+    <button id="batchGoodBtn">🙂 Went well</button>
+    <button id="batchBadBtn">🙁 Went bad</button>
+  </div>
+  <div class="sheetActions">
+    <button id="batchApplyBtn">Apply</button>
+    <button class="secondaryClose" id="batchClose">Cancel</button>
+  </div>
+</div>
+
+<!-- Auth sheet -->
+<div class="sheet" id="authSheet">
+  <div class="sheetHead"><div class="sheetTitle" id="authTitle">Sign up</div></div>
+  <div id="authTabs">
+    <button id="tabSignup" class="activeTab">Sign up</button>
+    <button id="tabLogin">Log in</button>
+  </div>
+  <div class="field"><label for="authUser">Name</label><input type="text" id="authUser" autocomplete="off"></div>
+  <div class="field"><label for="authPass">Password</label><input type="password" id="authPass"></div>
+  <div class="authError" id="authError"></div>
+  <div class="sheetActions">
+    <button id="authSubmit">Sign up</button>
+    <button class="secondaryClose" id="authClose">Cancel</button>
+  </div>
+  <p class="authNote">This is a local, on-this-device profile only — not a secure account system. Your data stays in this browser and does not sync across devices.</p>
+</div>
+
+<script>
+  const MS_WEEK = 7*24*60*60*1000;
+  const USERS_KEY = 'jeevan.users';
+  const CURRENT_USER_KEY = 'jeevan.currentUser';
+  const LEGACY_KEY = 'weekCountdown.v1';
+
+  const el = (id) => document.getElementById(id);
+  const birthdateInput = el('birthdate');
+  const targetAgeInput = el('targetage');
+  const unitSelect = el('unitSelect');
+  const gridContainer = el('gridContainer');
+  const gridScroll = el('gridScroll');
+
+  const overlay = el('overlay');
+  const editSheet = el('editSheet');
+  const sheetTitle = el('sheetTitle');
+  const sheetDate = el('sheetDate');
+  const noteInput = el('noteInput');
+  const goodBtn = el('goodBtn');
+  const badBtn = el('badBtn');
+
+  const notebookSheet = el('notebookSheet');
+  const notebookSearch = el('notebookSearch');
+  const notebookList = el('notebookList');
+
+  const authSheet = el('authSheet');
+  const authbar = el('authbar');
+
+  let currentUser = localStorage.getItem(CURRENT_USER_KEY) || 'guest';
+  let entries = { week:{}, month:{}, year:{} };
+  let todos = [];
+  let reminder = { enabled:false, day:'1', time:'18:00', lastFired:null };
+  let currentUnit = 'week';
+  let zoomLevel = 1;
+  let activeUnit = null, activeIndex = null, currentMark = null;
+  let authMode = 'signup';
+
+  function fmt(n){ return n.toLocaleString('en-US'); }
+  function dataKey(user){ return 'jeevan.data.' + user; }
+
+  function loadUsers(){ try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; } catch(e){ return {}; } }
+  function saveUsers(u){ try{ localStorage.setItem(USERS_KEY, JSON.stringify(u)); } catch(e){} }
+  function obfuscate(pw){ return btoa(unescape(encodeURIComponent(pw.split('').reverse().join('')))); }
+
+  function loadProfile(user){
+    try{
+      const raw = localStorage.getItem(dataKey(user));
+      if (raw) return JSON.parse(raw);
+    } catch(e){}
+    if (user === 'guest'){
+      try{
+        const legacy = JSON.parse(localStorage.getItem(LEGACY_KEY));
+        if (legacy){
+          return {
+            birthdate: legacy.birthdate,
+            targetAge: legacy.targetAge,
+            entries: { week: legacy.weekData || {}, month:{}, year:{} },
+            reminder: { enabled:false, day:'1', time:'18:00', lastFired:null }
+          };
+        }
+      } catch(e){}
+    }
+    return null;
+  }
+
+  function persist(){
+    try{
+      localStorage.setItem(dataKey(currentUser), JSON.stringify({
+        birthdate: birthdateInput.value,
+        targetAge: targetAgeInput.value,
+        entries: entries,
+        reminder: reminder,
+        todos: todos
+      }));
+    } catch(e){}
+  }
+
+  function applyProfileData(data){
+    if (data && data.birthdate){
+      birthdateInput.value = data.birthdate;
+      targetAgeInput.value = data.targetAge || 90;
+      entries = data.entries || { week:{}, month:{}, year:{} };
+      reminder = data.reminder || { enabled:false, day:'1', time:'18:00', lastFired:null };
+      todos = data.todos || [];
+    } else {
+      const today = new Date();
+      const defaultBirth = new Date(today.getFullYear()-33, today.getMonth(), today.getDate());
+      birthdateInput.value = defaultBirth.toISOString().slice(0,10);
+      targetAgeInput.value = 90;
+      entries = { week:{}, month:{}, year:{} };
+      reminder = { enabled:false, day:'1', time:'18:00', lastFired:null };
+      todos = [];
+    }
+    el('reminderDay').value = reminder.day;
+    el('reminderTime').value = reminder.time;
+    updateReminderButton();
+    renderTodos();
+  }
+
+  function switchUser(user){
+    currentUser = user;
+    localStorage.setItem(CURRENT_USER_KEY, user);
+    applyProfileData(loadProfile(user));
+    updateAuthUI();
+    render();
+  }
+
+  function updateAuthUI(){
+    authbar.innerHTML = '';
+    if (currentUser === 'guest'){
+      const su = document.createElement('button'); su.textContent = 'Sign up';
+      su.onclick = () => openAuth('signup');
+      const li = document.createElement('button'); li.textContent = 'Log in';
+      li.onclick = () => openAuth('login');
+      authbar.appendChild(su); authbar.appendChild(li);
+    } else {
+      const span = document.createElement('span'); span.textContent = 'Hi, ' + currentUser;
+      const so = document.createElement('button'); so.textContent = 'Sign out';
+      so.onclick = () => switchUser('guest');
+      authbar.appendChild(span); authbar.appendChild(so);
+    }
+  }
+
+  function openAuth(mode){
+    authMode = mode;
+    el('tabSignup').classList.toggle('activeTab', mode==='signup');
+    el('tabLogin').classList.toggle('activeTab', mode==='login');
+    el('authTitle').textContent = mode==='signup' ? 'Sign up' : 'Log in';
+    el('authSubmit').textContent = mode==='signup' ? 'Sign up' : 'Log in';
+    el('authUser').value = ''; el('authPass').value = ''; el('authError').textContent = '';
+    overlay.classList.add('open'); authSheet.classList.add('open');
+  }
+  function closeAuth(){ overlay.classList.remove('open'); authSheet.classList.remove('open'); }
+  el('tabSignup').onclick = () => openAuth('signup');
+  el('tabLogin').onclick = () => openAuth('login');
+  el('authClose').onclick = closeAuth;
+
+  el('authSubmit').onclick = () => {
+    const name = el('authUser').value.trim();
+    const pass = el('authPass').value;
+    const errEl = el('authError');
+    if (!name || !pass){ errEl.textContent = 'Enter a name and password.'; return; }
+    const users = loadUsers();
+    if (authMode === 'signup'){
+      if (users[name]){ errEl.textContent = 'That name is already taken.'; return; }
+      users[name] = { pass: obfuscate(pass) };
+      saveUsers(users);
+      closeAuth();
+      switchUser(name);
+    } else {
+      if (!users[name] || users[name].pass !== obfuscate(pass)){
+        errEl.textContent = 'Name or password not recognized.'; return;
+      }
+      closeAuth();
+      switchUser(name);
+    }
+  };
+
+  // ---------- Unit math ----------
+  function totalUnitsFor(unit, targetAge){
+    if (unit === 'week') return Math.round(targetAge*365.25/7);
+    if (unit === 'month') return Math.round(targetAge*12);
+    return Math.ceil(targetAge);
+  }
+  function unitsLivedFor(unit, birth, now){
+    if (unit === 'week') return Math.floor((now-birth)/MS_WEEK);
+    if (unit === 'month'){
+      let m = (now.getFullYear()-birth.getFullYear())*12 + (now.getMonth()-birth.getMonth());
+      if (now.getDate() < birth.getDate()) m -= 1;
+      return Math.max(0, m);
+    }
+    let y = now.getFullYear() - birth.getFullYear();
+    if (now.getMonth() < birth.getMonth() || (now.getMonth()===birth.getMonth() && now.getDate()<birth.getDate())) y -= 1;
+    return Math.max(0, y);
+  }
+  function unitStartDate(birth, unit, idx){
+    if (unit === 'week') return new Date(birth.getTime() + idx*MS_WEEK);
+    if (unit === 'month') return new Date(birth.getFullYear(), birth.getMonth()+idx, birth.getDate());
+    return new Date(birth.getFullYear()+idx, birth.getMonth(), birth.getDate());
+  }
+  function preciseAgeYears(birth, now){ return (now-birth)/(365.25*24*3600*1000); }
+
+  function render(){
+    const birth = new Date(birthdateInput.value);
+    const targetAge = Math.max(1, parseFloat(targetAgeInput.value || '90'));
+    if (isNaN(birth.getTime())) return;
+    const now = new Date();
+
+    const total = totalUnitsFor(currentUnit, targetAge);
+    const lived = unitsLivedFor(currentUnit, birth, now);
+    const left = Math.max(0, total - lived);
+    const pct = Math.min(100, (lived/total)*100);
+
+    const unitWord = currentUnit === 'week' ? 'weeks' : currentUnit === 'month' ? 'months' : 'years';
+    el('bigNumber').textContent = fmt(left);
+    el('bigLabel').textContent = unitWord + ' left in this lifetime';
+    el('livedNum').textContent = fmt(lived);
+    el('livedLabel').textContent = unitWord + ' lived';
+    el('pctLived').textContent = pct.toFixed(1) + '%';
+
+    const totalWeeksAlways = totalUnitsFor('week', targetAge);
+    const livedWeeksAlways = unitsLivedFor('week', birth, now);
+    el('yearsLeft').textContent = ((totalWeeksAlways-livedWeeksAlways)/52).toFixed(1);
+    el('currentAge').textContent = preciseAgeYears(birth, now).toFixed(1);
+    el('barInner').style.width = pct + '%';
+
+    buildGrid(currentUnit, birth, total, lived);
+    persist();
+  }
+
+  function buildGrid(unit, birth, total, lived){
+    gridContainer.innerHTML = '';
+    const perRow = unit === 'week' ? 52 : unit === 'month' ? 12 : 10;
+    const totalRows = Math.ceil(total/perRow);
+
+    for (let row=0; row<totalRows; row++){
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'yearrow';
+      const label = document.createElement('div');
+      const labelVal = unit === 'year' ? row*10 : row;
+      label.className = 'agenum' + (labelVal % 10 === 0 ? ' tick' : '');
+      label.textContent = labelVal;
+      rowDiv.appendChild(label);
+
+      const grid = document.createElement('div');
+      grid.className = 'weekgrid';
+      grid.style.gridTemplateColumns = `repeat(${perRow}, 9px)`;
+
+      for (let c=0; c<perRow; c++){
+        const idx = row*perRow + c;
+        if (idx >= total) break;
+        const cell = document.createElement('div');
+        let cls = 'cell';
+        if (idx === lived) cls += ' current';
+        else if (idx < lived) cls += ' lived';
+
+        const entry = entries[unit][idx];
+        if (entry && entry.mark === 'good') cls += ' good';
+        if (entry && entry.mark === 'bad') cls += ' bad';
+        if (entry && entry.note) cls += ' has-note';
+        cell.className = cls;
+
+        const startDate = unitStartDate(birth, unit, idx);
+        const dateStr = startDate.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+        cell.addEventListener('click', () => openEditSheet(unit, idx, row, c, dateStr));
+
+        grid.appendChild(cell);
+      }
+      rowDiv.appendChild(grid);
+      gridContainer.appendChild(rowDiv);
+    }
+  }
+
+  // ---------- Edit sheet ----------
+  function openEditSheet(unit, idx, row, col, dateStr){
+    activeUnit = unit; activeIndex = idx;
+    const entry = entries[unit][idx] || {};
+    const label = unit === 'week' ? `Age ${row}, week ${col+1}` : unit === 'month' ? `Age ${row}, month ${col+1}` : `Year ${idx}`;
+    sheetTitle.textContent = label;
+    sheetDate.textContent = dateStr;
+    noteInput.value = entry.note || '';
+    currentMark = entry.mark || null;
+    updateMarkButtons();
+    overlay.classList.add('open');
+    editSheet.classList.add('open');
+  }
+  function closeEditSheet(){ overlay.classList.remove('open'); editSheet.classList.remove('open'); activeUnit=null; activeIndex=null; }
+  function updateMarkButtons(){
+    goodBtn.classList.toggle('active-good', currentMark==='good');
+    badBtn.classList.toggle('active-bad', currentMark==='bad');
+    noteInput.classList.toggle('note-good', currentMark==='good');
+    noteInput.classList.toggle('note-bad', currentMark==='bad');
+  }
+  goodBtn.onclick = () => { currentMark = currentMark==='good' ? null : 'good'; updateMarkButtons(); };
+  badBtn.onclick = () => { currentMark = currentMark==='bad' ? null : 'bad'; updateMarkButtons(); };
+
+  el('saveBtn').onclick = () => {
+    if (activeUnit === null) return;
+    const note = noteInput.value.trim();
+    if (note || currentMark){
+      entries[activeUnit][activeIndex] = { note, mark: currentMark, savedAt: Date.now() };
+    } else {
+      delete entries[activeUnit][activeIndex];
+    }
+    closeEditSheet();
+    render();
+  };
+  el('closeBtn').onclick = closeEditSheet;
+  overlay.addEventListener('click', () => { closeEditSheet(); closeNotebook(); closeAuth(); closeBatch(); });
+
+  // ---------- Notebook (search + all notes) ----------
+  function collectEntries(){
+    const birth = new Date(birthdateInput.value);
+    const out = [];
+    ['week','month','year'].forEach((u) => {
+      Object.keys(entries[u]).forEach((idxStr) => {
+        const idx = parseInt(idxStr, 10);
+        const e = entries[u][idx];
+        out.push({ unit:u, idx, note:e.note||'', mark:e.mark||null, savedAt:e.savedAt||0, date: unitStartDate(birth, u, idx) });
+      });
+    });
+    out.sort((a,b) => b.savedAt - a.savedAt);
+    return out;
+  }
+
+  function renderNotebook(filter){
+    const all = collectEntries();
+    const f = (filter||'').trim().toLowerCase();
+    const filtered = f ? all.filter(e => e.note.toLowerCase().includes(f)) : all;
+    notebookList.innerHTML = '';
+    if (filtered.length === 0){
+      const p = document.createElement('p');
+      p.className = 'emptyNote';
+      p.textContent = f ? 'No notes match that search.' : 'No notes yet — tap a square on the grid to add one.';
+      notebookList.appendChild(p);
+      return;
+    }
+    filtered.forEach((e) => {
+      const card = document.createElement('div');
+      card.className = 'noteCard' + (e.mark === 'good' ? ' good' : e.mark === 'bad' ? ' bad' : '');
+      const dateStr = e.date.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+      const loggedStr = e.savedAt ? new Date(e.savedAt).toLocaleString('en-US', {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+      const unitLabel = e.unit === 'week' ? `Week ${e.idx+1}` : e.unit === 'month' ? `Month ${e.idx+1}` : `Year ${e.idx}`;
+      card.innerHTML = `
+        <div class="meta">
+          <span class="tag">${unitLabel} · ${dateStr}</span>
+          <span>${loggedStr ? 'Logged ' + loggedStr : ''}</span>
+        </div>
+        <div class="text">${e.note ? escapeHtml(e.note) : '<em>(no note — just a mark)</em>'}</div>
+      `;
+      card.addEventListener('click', () => {
+        closeNotebook();
+        const birth = new Date(birthdateInput.value);
+        const dateStr2 = e.date.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+        const row = e.unit === 'year' ? Math.floor(e.idx/10) : Math.floor(e.idx / (e.unit==='week'?52:12));
+        const col = e.unit === 'year' ? e.idx%10 : e.idx % (e.unit==='week'?52:12);
+        openEditSheet(e.unit, e.idx, row, col, dateStr2);
+      });
+      notebookList.appendChild(card);
+    });
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function openNotebook(){
+    notebookSearch.value = '';
+    renderNotebook('');
+    overlay.classList.add('open');
+    notebookSheet.classList.add('open');
+  }
+  function closeNotebook(){ overlay.classList.remove('open'); notebookSheet.classList.remove('open'); }
+  el('notebookBtn').onclick = openNotebook;
+  el('notebookClose').onclick = closeNotebook;
+  notebookSearch.addEventListener('input', () => renderNotebook(notebookSearch.value));
+
+  // ---------- Batch mark ----------
+  const batchSheet = el('batchSheet');
+  let batchMark = 'good';
+  function updateBatchButtons(){
+    el('batchGoodBtn').classList.toggle('active-good', batchMark === 'good');
+    el('batchBadBtn').classList.toggle('active-bad', batchMark === 'bad');
+  }
+  el('batchGoodBtn').onclick = () => { batchMark = 'good'; updateBatchButtons(); };
+  el('batchBadBtn').onclick = () => { batchMark = 'bad'; updateBatchButtons(); };
+
+  function openBatch(){
+    batchMark = 'good';
+    updateBatchButtons();
+    const currentAge = Math.floor(preciseAgeYears(new Date(birthdateInput.value), new Date()));
+    el('batchFrom').value = 0;
+    el('batchTo').value = Math.max(0, currentAge - 1);
+    overlay.classList.add('open');
+    batchSheet.classList.add('open');
+  }
+  function closeBatch(){ overlay.classList.remove('open'); batchSheet.classList.remove('open'); }
+  el('batchBtn').onclick = openBatch;
+  el('batchClose').onclick = closeBatch;
+
+  el('batchApplyBtn').onclick = () => {
+    const fromAge = parseInt(el('batchFrom').value, 10);
+    const toAge = parseInt(el('batchTo').value, 10);
+    if (isNaN(fromAge) || isNaN(toAge) || fromAge < 0 || toAge < fromAge){
+      alert('Enter a valid age range (From age ≤ To age).');
+      return;
+    }
+    const targetAge = Math.max(1, parseFloat(targetAgeInput.value || '90'));
+    const unit = currentUnit;
+    const perRow = unit === 'week' ? 52 : unit === 'month' ? 12 : 10;
+    const total = totalUnitsFor(unit, targetAge);
+
+    let startIdx, endIdx;
+    if (unit === 'year'){
+      startIdx = fromAge; endIdx = toAge;
+    } else {
+      startIdx = fromAge * perRow;
+      endIdx = (toAge + 1) * perRow - 1;
+    }
+    endIdx = Math.min(endIdx, total - 1);
+    if (startIdx > endIdx){ closeBatch(); return; }
+
+    for (let idx = startIdx; idx <= endIdx; idx++){
+      const existing = entries[unit][idx] || {};
+      entries[unit][idx] = { note: existing.note || '', mark: batchMark, savedAt: Date.now() };
+    }
+    closeBatch();
+    render();
+  };
+
+  // ---------- Zoom ----------
+  function applyZoom(){
+    gridContainer.style.transform = `scale(${zoomLevel})`;
+    el('zoomLabel').textContent = Math.round(zoomLevel*100) + '%';
+  }
+  let pinchStartDist = null, pinchStartZoom = 1;
+  function touchDist(t0, t1){ return Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY); }
+  gridScroll.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2){ pinchStartDist = touchDist(e.touches[0], e.touches[1]); pinchStartZoom = zoomLevel; }
+  }, {passive:true});
+  gridScroll.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && pinchStartDist){
+      e.preventDefault();
+      const d = touchDist(e.touches[0], e.touches[1]);
+      zoomLevel = Math.min(3, Math.max(0.5, pinchStartZoom * (d/pinchStartDist)));
+      applyZoom();
+    }
+  }, {passive:false});
+  gridScroll.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinchStartDist = null; });
+
+  // ---------- Reminder ----------
+  function updateReminderButton(){
+    const btn = el('reminderToggle');
+    btn.textContent = reminder.enabled ? 'Enabled ✓' : 'Enable';
+    btn.classList.toggle('on', reminder.enabled);
+  }
+  el('reminderToggle').onclick = () => {
+    if (reminder.enabled){
+      reminder.enabled = false; updateReminderButton(); persist(); return;
+    }
+    if (!('Notification' in window)){ alert('Notifications are not supported in this browser.'); return; }
+    Notification.requestPermission().then((perm) => {
+      if (perm === 'granted'){ reminder.enabled = true; updateReminderButton(); persist(); }
+      else { alert('Notification permission was not granted.'); }
+    });
+  };
+  el('reminderDay').addEventListener('change', (e) => { reminder.day = e.target.value; persist(); });
+  el('reminderTime').addEventListener('change', (e) => { reminder.time = e.target.value; persist(); });
+
+  function checkReminder(){
+    if (!reminder.enabled || Notification.permission !== 'granted') return;
+    const now = new Date();
+    if (String(now.getDay()) !== String(reminder.day)) return;
+    const [hh, mm] = reminder.time.split(':');
+    if (now.getHours() !== Number(hh) || now.getMinutes() !== Number(mm)) return;
+    const weekKey = Math.floor(now.getTime()/MS_WEEK);
+    if (reminder.lastFired === weekKey) return;
+    new Notification('Jeevan', { body: "Time to reflect on this week — add a note in Jeevan." });
+    reminder.lastFired = weekKey;
+    persist();
+  }
+  setInterval(checkReminder, 30000);
+
+  // ---------- Export / Import ----------
+  el('exportBtn').onclick = () => {
+    const blob = new Blob([JSON.stringify({ birthdate: birthdateInput.value, targetAge: targetAgeInput.value, entries, reminder }, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'jeevan-data-' + currentUser + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const importFile = el('importFile');
+  el('importBtn').onclick = () => importFile.click();
+  importFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try{
+        const parsed = JSON.parse(ev.target.result);
+        applyProfileData(parsed);
+        render();
+      } catch(err){ alert('Could not read that file.'); }
+    };
+    reader.readAsText(file);
+    importFile.value = '';
+  });
+
+  // ---------- To-do ----------
+  function renderTodos(){
+    const list = el('todoList');
+    list.innerHTML = '';
+
+    const total = todos.length;
+    const done = todos.filter((t) => t.done).length;
+    const pct = total === 0 ? 0 : Math.round((done/total)*100);
+    el('todoRing').style.background = `conic-gradient(var(--green) ${pct*3.6}deg, var(--cell-empty) 0deg)`;
+    el('todoRingText').textContent = pct + '%';
+    el('todoProgressText').innerHTML = total === 0
+      ? 'No tasks yet.'
+      : `<strong>${done} of ${total}</strong> tasks done.<br>You're moving in the right direction.`;
+
+    if (todos.length === 0){
+      const p = document.createElement('p');
+      p.className = 'todoEmpty';
+      p.textContent = 'Nothing on your list yet.';
+      list.appendChild(p);
+      return;
+    }
+    todos.forEach((t) => {
+      const row = document.createElement('div');
+      row.className = 'todoItem' + (t.done ? ' done' : '');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = t.done;
+      cb.addEventListener('change', () => { t.done = cb.checked; persist(); renderTodos(); });
+      const span = document.createElement('span');
+      span.className = 'todoText'; span.textContent = t.text;
+      const del = document.createElement('button');
+      del.className = 'todoDel'; del.textContent = '×';
+      del.addEventListener('click', () => { todos = todos.filter((x) => x.id !== t.id); persist(); renderTodos(); });
+      row.appendChild(cb); row.appendChild(span); row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+  function addTodo(){
+    const input = el('todoInput');
+    const text = input.value.trim();
+    if (!text) return;
+    todos.push({ id: Date.now(), text, done:false });
+    input.value = '';
+    persist();
+    renderTodos();
+  }
+  el('todoAddBtn').onclick = addTodo;
+  el('todoInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') addTodo(); });
+
+  // ---------- Wire up + init ----------
+  birthdateInput.addEventListener('change', render);
+  targetAgeInput.addEventListener('change', render);
+  targetAgeInput.addEventListener('input', render);
+  unitSelect.addEventListener('change', () => { currentUnit = unitSelect.value; render(); });
+
+  applyProfileData(loadProfile(currentUser));
+  updateAuthUI();
+  render();
+  applyZoom();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js').catch(() => {}); });
+  }
+</script>
+
+</body>
+</html>

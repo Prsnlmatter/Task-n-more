@@ -670,27 +670,54 @@
     persist();
   }
 
+  function weekRowBoundaries(birth, total){
+    const bounds = [0];
+    let n = 1;
+    while (bounds[bounds.length-1] < total){
+      const anniversary = new Date(birth.getFullYear()+n, birth.getMonth(), birth.getDate());
+      let idx = unitsLivedFor('week', birth, anniversary);
+      if (idx <= bounds[bounds.length-1]) idx = bounds[bounds.length-1] + 1; // safety against zero-length rows
+      if (idx >= total){ bounds.push(total); break; }
+      bounds.push(idx);
+      n++;
+      if (n > 200) { bounds.push(total); break; } // safety valve
+    }
+    return bounds;
+  }
+
   function buildGrid(unit, birth, total, lived){
     gridContainer.innerHTML = '';
-    const perRow = unit === 'week' ? 52 : unit === 'month' ? 12 : 10;
-    const totalRows = Math.ceil(total/perRow);
 
-    for (let row=0; row<totalRows; row++){
+    let rows; // array of {label, start, end} (end exclusive)
+    if (unit === 'week'){
+      const bounds = weekRowBoundaries(birth, total);
+      rows = [];
+      for (let i=0; i<bounds.length-1; i++) rows.push({ label:i, start:bounds[i], end:bounds[i+1] });
+    } else {
+      const perRow = unit === 'month' ? 12 : 10;
+      const totalRows = Math.ceil(total/perRow);
+      rows = [];
+      for (let r=0; r<totalRows; r++){
+        const start = r*perRow;
+        rows.push({ label: unit === 'year' ? r*10 : r, start, end: Math.min(start+perRow, total) });
+      }
+    }
+
+    rows.forEach((rowInfo) => {
       const rowDiv = document.createElement('div');
       rowDiv.className = 'yearrow';
       const label = document.createElement('div');
-      const labelVal = unit === 'year' ? row*10 : row;
-      label.className = 'agenum' + (labelVal % 10 === 0 ? ' tick' : '');
-      label.textContent = labelVal;
+      label.className = 'agenum' + (rowInfo.label % 10 === 0 ? ' tick' : '');
+      label.textContent = rowInfo.label;
       rowDiv.appendChild(label);
 
       const grid = document.createElement('div');
       grid.className = 'weekgrid';
-      grid.style.gridTemplateColumns = `repeat(${perRow}, 9px)`;
+      const cellsInRow = rowInfo.end - rowInfo.start;
+      grid.style.gridTemplateColumns = `repeat(${cellsInRow}, 9px)`;
 
-      for (let c=0; c<perRow; c++){
-        const idx = row*perRow + c;
-        if (idx >= total) break;
+      for (let idx = rowInfo.start; idx < rowInfo.end; idx++){
+        const c = idx - rowInfo.start;
         const cell = document.createElement('div');
         let cls = 'cell';
         if (idx === lived) cls += ' current';
@@ -705,13 +732,13 @@
 
         const startDate = unitStartDate(birth, unit, idx);
         const dateStr = startDate.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
-        cell.addEventListener('click', () => openEditSheet(unit, idx, row, c, dateStr));
+        cell.addEventListener('click', () => openEditSheet(unit, idx, rowInfo.label, c, dateStr));
 
         grid.appendChild(cell);
       }
       rowDiv.appendChild(grid);
       gridContainer.appendChild(rowDiv);
-    }
+    });
   }
 
   // ---------- Edit sheet ----------
@@ -796,8 +823,16 @@
         closeNotebook();
         const birth = new Date(birthdateInput.value);
         const dateStr2 = e.date.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
-        const row = e.unit === 'year' ? Math.floor(e.idx/10) : Math.floor(e.idx / (e.unit==='week'?52:12));
-        const col = e.unit === 'year' ? e.idx%10 : e.idx % (e.unit==='week'?52:12);
+        let row, col;
+        if (e.unit === 'year'){ row = Math.floor(e.idx/10); col = e.idx%10; }
+        else if (e.unit === 'week'){
+          const targetAge = Math.max(1, parseFloat(targetAgeInput.value || '90'));
+          const total = totalUnitsFor('week', targetAge, birth);
+          const bounds = weekRowBoundaries(birth, total);
+          row = 0;
+          for (let i=0; i<bounds.length-1; i++){ if (e.idx >= bounds[i] && e.idx < bounds[i+1]){ row = i; break; } }
+          col = e.idx - bounds[row];
+        } else { row = Math.floor(e.idx/12); col = e.idx%12; }
         openEditSheet(e.unit, e.idx, row, col, dateStr2);
       });
       notebookList.appendChild(card);
@@ -849,13 +884,17 @@
     const targetAge = Math.max(1, parseFloat(targetAgeInput.value || '90'));
     const birth = new Date(birthdateInput.value);
     const unit = currentUnit;
-    const perRow = unit === 'week' ? 52 : unit === 'month' ? 12 : 10;
     const total = totalUnitsFor(unit, targetAge, birth);
 
     let startIdx, endIdx;
     if (unit === 'year'){
       startIdx = fromAge; endIdx = toAge;
+    } else if (unit === 'week'){
+      const bounds = weekRowBoundaries(birth, total);
+      startIdx = bounds[Math.min(fromAge, bounds.length-1)] || 0;
+      endIdx = (bounds[Math.min(toAge+1, bounds.length-1)] || total) - 1;
     } else {
+      const perRow = 12;
       startIdx = fromAge * perRow;
       endIdx = (toAge + 1) * perRow - 1;
     }

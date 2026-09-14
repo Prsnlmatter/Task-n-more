@@ -26,7 +26,20 @@
     --green-dim: #14472f;
     --orange: #ff8a3d;
     --orange-dim: #5a3a20;
+    --red: #8b0000;
+    --red-dim: #3a0a0a;
+    --brown: #c49a6c;
+    --brown-dim: #4a3a28;
     --cell-empty: #1c2733;
+  }
+
+  html.light{
+    --bg: #f6f5f2;
+    --panel: #ffffff;
+    --panel-line: #e3e0da;
+    --text: #171a1f;
+    --muted: #6b7280;
+    --cell-empty: #e7e5e0;
   }
 
   *{ box-sizing: border-box; }
@@ -103,9 +116,18 @@
   .weekgrid{ display:grid; gap:2px; margin-bottom:4px; }
   .cell{ width:9px; height:9px; border-radius:1.5px; background:var(--cell-empty); cursor:pointer; position:relative; }
   .cell.lived{ background: var(--blue-dim); }
-  .cell.current{ background: var(--blue); box-shadow: 0 0 0 1px rgba(47,143,255,0.5); }
-  .cell.good{ background: var(--green) !important; }
-  .cell.bad{ background: var(--orange) !important; }
+  .cell.current{
+    background: var(--blue);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.7), 0 0 4px 1px rgba(255,255,255,0.6);
+    animation: currentGlow 1.6s ease-in-out infinite;
+  }
+  @keyframes currentGlow{
+    0%,100%{ box-shadow: 0 0 0 1px rgba(255,255,255,0.55), 0 0 3px 1px rgba(255,255,255,0.45); }
+    50%{ box-shadow: 0 0 0 1px rgba(255,255,255,1), 0 0 8px 3px rgba(255,255,255,0.95); }
+  }
+  .cell.good{ background: var(--orange) !important; }
+  .cell.bad{ background: var(--red) !important; }
+  .cell.batch{ background: var(--brown) !important; }
   .cell.has-note::after{
     content:''; position:absolute; top:-1px; right:-1px; width:3px; height:3px; border-radius:50%; background:var(--text);
   }
@@ -140,16 +162,16 @@
     transition: background 0.15s, border-color 0.15s;
   }
   #noteInput:focus{ outline:none; border-color: var(--blue-dim); }
-  #noteInput.note-good{ background: rgba(33,197,122,0.12); border-color: var(--green); }
-  #noteInput.note-bad{ background: rgba(255,138,61,0.12); border-color: var(--orange); }
+  #noteInput.note-good{ background: rgba(255,138,61,0.14); border-color: var(--orange); }
+  #noteInput.note-bad{ background: rgba(139,0,0,0.18); border-color: var(--red); }
 
   .marktoggles{ display:flex; gap:8px; margin-top:14px; }
   .marktoggles button{
     flex:1; padding:10px; border-radius:8px; border:1px solid var(--panel-line); background:var(--bg);
     color:var(--text); font-family:inherit; font-size:13px; cursor:pointer;
   }
-  .marktoggles button.active-good{ background: var(--green); border-color: var(--green); color:#08251a; }
-  .marktoggles button.active-bad{ background: var(--orange); border-color: var(--orange); color:#2a1608; }
+  .marktoggles button.active-good{ background: var(--orange); border-color: var(--orange); color:#2a1608; }
+  .marktoggles button.active-bad{ background: var(--red); border-color: var(--red); color:#2a0a0a; }
 
   .sheetActions{ display:flex; gap:10px; margin-top:16px; }
   .sheetActions button{ padding:10px 16px; border-radius:8px; border:none; font-family:inherit; font-size:13.5px; cursor:pointer; }
@@ -165,8 +187,9 @@
   .noteCard{
     border:1px solid var(--panel-line); border-radius:9px; padding:10px 12px; margin-top:10px; cursor:pointer;
   }
-  .noteCard.good{ background: rgba(33,197,122,0.10); border-color: var(--green); }
-  .noteCard.bad{ background: rgba(255,138,61,0.10); border-color: var(--orange); }
+  .noteCard.good{ background: rgba(255,138,61,0.10); border-color: var(--orange); }
+  .noteCard.bad{ background: rgba(139,0,0,0.15); border-color: var(--red); }
+  .noteCard.batch{ background: rgba(196,154,108,0.12); border-color: var(--brown); }
   .noteCard .meta{ font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
   .noteCard .tag{ text-transform:uppercase; letter-spacing:0.04em; font-size:10px; color: var(--blue); }
   .noteCard .text{ font-size:13.5px; margin-top:6px; white-space:pre-wrap; }
@@ -196,6 +219,13 @@
     font-family:inherit; font-size:13px; cursor:pointer;
   }
   #reminderToggle.on{ background: var(--green); color:#08251a; }
+
+  .themeToggle{
+    position: fixed; top: 16px; left: 16px; width:40px; height:40px; border-radius:50%;
+    background: var(--panel); border:1px solid var(--panel-line); color:var(--text);
+    font-size:17px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:15; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
 
   .todoCard{ background:var(--panel); border:1px solid var(--panel-line); border-radius:10px; padding:16px; margin-bottom:26px; }
   .todoCard h3{ font-family:'Fraunces', serif; font-weight:500; font-size:16px; margin:0 0 12px; }
@@ -233,6 +263,8 @@
 </style>
 </head>
 <body>
+
+<button class="themeToggle" id="themeToggle" aria-label="Toggle dark/light mode">🌙</button>
 
 <div class="wrap">
 
@@ -330,9 +362,10 @@
 
     <div class="legend">
       <span><span class="sw" style="background:var(--blue-dim)"></span>Lived</span>
-      <span><span class="sw" style="background:var(--blue)"></span>Current</span>
-      <span><span class="sw" style="background:var(--green)"></span>Went well</span>
-      <span><span class="sw" style="background:var(--orange)"></span>Went bad</span>
+      <span><span class="sw" style="background:var(--blue); box-shadow:0 0 3px 1px rgba(255,255,255,0.8);"></span>Current (glows)</span>
+      <span><span class="sw" style="background:var(--orange)"></span>Went well</span>
+      <span><span class="sw" style="background:var(--red)"></span>Went bad</span>
+      <span><span class="sw" style="background:var(--brown)"></span>Batch marked</span>
       <span><span class="sw" style="background:var(--cell-empty)"></span>Ahead</span>
     </div>
   </div>
@@ -558,13 +591,35 @@
   };
 
   // ---------- Unit math ----------
-  function totalUnitsFor(unit, targetAge){
-    if (unit === 'week') return Math.round(targetAge*365.25/7);
+  // Weeks are calendar weeks (Monday–Sunday), not birth-anchored 7-day blocks.
+  // Week 0 runs from the birth date to the following Sunday (may be short);
+  // week 1 onward are full Monday-to-Sunday weeks.
+  function firstMondayAfterBirth(birth){
+    const dow = birth.getDay(); // 0=Sun..6=Sat
+    const daysToSunday = (7 - dow) % 7;
+    const sunday = new Date(birth.getTime());
+    sunday.setDate(sunday.getDate() + daysToSunday);
+    const monday = new Date(sunday.getTime());
+    monday.setDate(monday.getDate() + 1);
+    return monday;
+  }
+  function totalUnitsFor(unit, targetAge, birth){
+    if (unit === 'week'){
+      const totalDays = targetAge*365.25;
+      const monday1 = firstMondayAfterBirth(birth);
+      const daysToMonday1 = Math.round((monday1 - birth)/(24*3600*1000));
+      if (totalDays <= daysToMonday1) return 1;
+      return 1 + Math.ceil((totalDays - daysToMonday1)/7);
+    }
     if (unit === 'month') return Math.round(targetAge*12);
     return Math.ceil(targetAge);
   }
   function unitsLivedFor(unit, birth, now){
-    if (unit === 'week') return Math.floor((now-birth)/MS_WEEK);
+    if (unit === 'week'){
+      const monday1 = firstMondayAfterBirth(birth);
+      if (now < monday1) return 0;
+      return 1 + Math.floor((now - monday1)/MS_WEEK);
+    }
     if (unit === 'month'){
       let m = (now.getFullYear()-birth.getFullYear())*12 + (now.getMonth()-birth.getMonth());
       if (now.getDate() < birth.getDate()) m -= 1;
@@ -575,7 +630,13 @@
     return Math.max(0, y);
   }
   function unitStartDate(birth, unit, idx){
-    if (unit === 'week') return new Date(birth.getTime() + idx*MS_WEEK);
+    if (unit === 'week'){
+      if (idx === 0) return new Date(birth.getTime());
+      const monday1 = firstMondayAfterBirth(birth);
+      const d = new Date(monday1.getTime());
+      d.setDate(d.getDate() + (idx-1)*7);
+      return d;
+    }
     if (unit === 'month') return new Date(birth.getFullYear(), birth.getMonth()+idx, birth.getDate());
     return new Date(birth.getFullYear()+idx, birth.getMonth(), birth.getDate());
   }
@@ -587,7 +648,7 @@
     if (isNaN(birth.getTime())) return;
     const now = new Date();
 
-    const total = totalUnitsFor(currentUnit, targetAge);
+    const total = totalUnitsFor(currentUnit, targetAge, birth);
     const lived = unitsLivedFor(currentUnit, birth, now);
     const left = Math.max(0, total - lived);
     const pct = Math.min(100, (lived/total)*100);
@@ -599,7 +660,7 @@
     el('livedLabel').textContent = unitWord + ' lived';
     el('pctLived').textContent = pct.toFixed(1) + '%';
 
-    const totalWeeksAlways = totalUnitsFor('week', targetAge);
+    const totalWeeksAlways = totalUnitsFor('week', targetAge, birth);
     const livedWeeksAlways = unitsLivedFor('week', birth, now);
     el('yearsLeft').textContent = ((totalWeeksAlways-livedWeeksAlways)/52).toFixed(1);
     el('currentAge').textContent = preciseAgeYears(birth, now).toFixed(1);
@@ -636,8 +697,9 @@
         else if (idx < lived) cls += ' lived';
 
         const entry = entries[unit][idx];
-        if (entry && entry.mark === 'good') cls += ' good';
-        if (entry && entry.mark === 'bad') cls += ' bad';
+        if (entry && entry.batch) cls += ' batch';
+        else if (entry && entry.mark === 'good') cls += ' good';
+        else if (entry && entry.mark === 'bad') cls += ' bad';
         if (entry && entry.note) cls += ' has-note';
         cell.className = cls;
 
@@ -679,7 +741,7 @@
     if (activeUnit === null) return;
     const note = noteInput.value.trim();
     if (note || currentMark){
-      entries[activeUnit][activeIndex] = { note, mark: currentMark, savedAt: Date.now() };
+      entries[activeUnit][activeIndex] = { note, mark: currentMark, batch: false, savedAt: Date.now() };
     } else {
       delete entries[activeUnit][activeIndex];
     }
@@ -697,7 +759,7 @@
       Object.keys(entries[u]).forEach((idxStr) => {
         const idx = parseInt(idxStr, 10);
         const e = entries[u][idx];
-        out.push({ unit:u, idx, note:e.note||'', mark:e.mark||null, savedAt:e.savedAt||0, date: unitStartDate(birth, u, idx) });
+        out.push({ unit:u, idx, note:e.note||'', mark:e.mark||null, batch: !!e.batch, savedAt:e.savedAt||0, date: unitStartDate(birth, u, idx) });
       });
     });
     out.sort((a,b) => b.savedAt - a.savedAt);
@@ -718,13 +780,14 @@
     }
     filtered.forEach((e) => {
       const card = document.createElement('div');
-      card.className = 'noteCard' + (e.mark === 'good' ? ' good' : e.mark === 'bad' ? ' bad' : '');
+      card.className = 'noteCard' + (e.batch ? ' batch' : e.mark === 'good' ? ' good' : e.mark === 'bad' ? ' bad' : '');
       const dateStr = e.date.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
       const loggedStr = e.savedAt ? new Date(e.savedAt).toLocaleString('en-US', {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) : '';
       const unitLabel = e.unit === 'week' ? `Week ${e.idx+1}` : e.unit === 'month' ? `Month ${e.idx+1}` : `Year ${e.idx}`;
+      const batchTag = e.batch ? ' · Batch' : '';
       card.innerHTML = `
         <div class="meta">
-          <span class="tag">${unitLabel} · ${dateStr}</span>
+          <span class="tag">${unitLabel} · ${dateStr}${batchTag}</span>
           <span>${loggedStr ? 'Logged ' + loggedStr : ''}</span>
         </div>
         <div class="text">${e.note ? escapeHtml(e.note) : '<em>(no note — just a mark)</em>'}</div>
@@ -784,9 +847,10 @@
       return;
     }
     const targetAge = Math.max(1, parseFloat(targetAgeInput.value || '90'));
+    const birth = new Date(birthdateInput.value);
     const unit = currentUnit;
     const perRow = unit === 'week' ? 52 : unit === 'month' ? 12 : 10;
-    const total = totalUnitsFor(unit, targetAge);
+    const total = totalUnitsFor(unit, targetAge, birth);
 
     let startIdx, endIdx;
     if (unit === 'year'){
@@ -800,7 +864,7 @@
 
     for (let idx = startIdx; idx <= endIdx; idx++){
       const existing = entries[unit][idx] || {};
-      entries[unit][idx] = { note: existing.note || '', mark: batchMark, savedAt: Date.now() };
+      entries[unit][idx] = { note: existing.note || '', mark: batchMark, batch: true, savedAt: Date.now() };
     }
     closeBatch();
     render();
@@ -938,6 +1002,20 @@
   targetAgeInput.addEventListener('change', render);
   targetAgeInput.addEventListener('input', render);
   unitSelect.addEventListener('change', () => { currentUnit = unitSelect.value; render(); });
+
+  // ---------- Theme ----------
+  const THEME_KEY = 'jeevan.theme';
+  function applyTheme(t){
+    document.documentElement.classList.toggle('light', t === 'light');
+    el('themeToggle').textContent = t === 'light' ? '☀️' : '🌙';
+  }
+  let theme = localStorage.getItem(THEME_KEY) || 'dark';
+  applyTheme(theme);
+  el('themeToggle').onclick = () => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, theme);
+    applyTheme(theme);
+  };
 
   applyProfileData(loadProfile(currentUser));
   updateAuthUI();

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeevan-v4';
+const CACHE_NAME = 'jeevan-v6';
 const ASSETS = [
   './',
   './index.html',

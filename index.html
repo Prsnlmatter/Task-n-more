@@ -50,8 +50,8 @@
   }
   .authbar button:hover{ border-color: var(--blue-dim); }
 
-  .brand{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
-  .brand .dot{ width:9px; height:9px; border-radius:50%; }
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+  .brand-icon{ width:36px; height:36px; border-radius:9px; flex-shrink:0; }
   .brand h1{
     font-family:'Fraunces', serif; font-weight:700; font-size:32px; margin:0;
     color: var(--text);
@@ -239,9 +239,7 @@
   <div class="authbar" id="authbar"></div>
 
   <div class="brand">
-    <span class="dot" style="background:var(--blue)"></span>
-    <span class="dot" style="background:var(--green)"></span>
-    <span class="dot" style="background:var(--orange)"></span>
+    <img src="icon-192.png" alt="Jeevan" class="brand-icon">
     <h1>Jeevan</h1>
   </div>
   <p class="tagline">Wasted time is a wasted life.</p>
